@@ -2,6 +2,7 @@ const express = require('express');
 require('dotenv').config()
 const app = express();
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
@@ -34,10 +35,58 @@ async function run() {
     // Collections
     const menuCollection = client.db('bitewaveDb').collection('menu');
     const cartCollection = client.db('bitewaveDb').collection('cart');
+    const userCollection = client.db('bitewaveDb').collection('users');
 
 
     /* ------------ Route --------------- */
-    // menu
+    // User related api
+    app.get('/users', async(req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.post('/users', async(req, res) => {
+      const user = req.body;
+
+      /** Insert email is user dosen't exists:
+       * You can do this many ways
+          1. email: unique
+          2. use mongoose
+          3. upsert
+          4. simple checking -> using database
+       */
+
+      const query = { email: user.email};
+      const existingUser = await userCollection.findOne(query);
+      if(existingUser){
+        return res.send({message : 'User already exist!', insertedId : null});
+      }
+
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+    
+
+    app.delete('/users/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch('/users/admin/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = { _id : new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role : 'admin'
+        }
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+    
+    // menu related api
     app.get('/menu', async(req, res) => {
         const result = await menuCollection.find().toArray();
         res.send(result);
@@ -45,7 +94,7 @@ async function run() {
 
 
 
-    // cart
+    // cart related api
     app.get('/cart', async(req, res) => {
         const email = req.query.email;
         const query = { email : email };
