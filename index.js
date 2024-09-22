@@ -36,6 +36,7 @@ async function run() {
     const menuCollection = client.db('bitewaveDb').collection('menu');
     const cartCollection = client.db('bitewaveDb').collection('cart');
     const userCollection = client.db('bitewaveDb').collection('users');
+    const blogCollection = client.db('bitewaveDb').collection('blogs');
 
 
     /* ------------ Route --------------- */
@@ -149,6 +150,12 @@ async function run() {
         res.send(result);
     });
 
+    app.post('/menu', verifyToken, verifyAdmin, async(req, res) => {
+      const menuData = req.body;
+      const result = await menuCollection.insertOne(menuData);
+      res.send(result);
+    });
+
 
 
     // cart related api
@@ -168,7 +175,20 @@ async function run() {
       const query = {_id : new ObjectId(id)};
       const result = await cartCollection.deleteOne(query);
       res.send(result);
-    })
+    });
+
+    // blog related api
+    app.get('/blogs', async(req, res) => {
+      const result = await blogCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get('/blogs/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id)};
+      const result = await blogCollection.findOne(filter);
+      res.send(result);
+    });
 
 
 
